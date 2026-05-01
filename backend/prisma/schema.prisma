@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Сущность User
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+}
+
+model Room {
+  id          String    @id @default(uuid()) @db.Uuid
+  number      String    @unique
+  name        String
+  capacity    Int
+  description String?
+
+  bookings        Booking[] @relation("BookingRoom")
+  backupBookings  Booking[] @relation("BookingBackupRoom")
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+enum EventType {
+  LECTURE
+  PRACTICE
+  SEMINAR
+  EXAM
+  OTHER
+}
+
+model Booking {
+  id            String    @id @default(uuid()) @db.Uuid
+
+  roomId        String    @db.Uuid
+  room          Room      @relation("BookingRoom", fields: [roomId], references: [id], onDelete: Restrict)
+
+  backupRoomId  String?   @db.Uuid
+  backupRoom    Room?     @relation("BookingBackupRoom", fields: [backupRoomId], references: [id], onDelete: SetNull)
+
+  eventName     String
+  eventType     EventType
+  subject       String?
+  organizerName String
+
+  startAt       DateTime
+  endAt         DateTime
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([roomId])
+  @@index([backupRoomId])
+  @@index([startAt, endAt])
+}
